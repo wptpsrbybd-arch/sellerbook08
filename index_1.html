@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SellerBook Pro - ヤフオク売上管理</title>
+<!-- v2026-08-16e PWA -->
+
+<!-- ===== PWA / iOS ホーム画面アプリ化 ===== -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SellerBook">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e84040">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" id="pwa-icon">
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+  background:#f2f2f7;color:#1c1c1e;font-size:14px;
+  min-height:100vh;max-width:480px;margin:0 auto;
+  padding-bottom:80px;
+  -webkit-text-size-adjust:100%;
+}
+
+/* ===== HEADER ===== */
+.app-header{
+  background:white;padding:14px 18px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid #e5e5ea;
+  position:sticky;top:0;z-index:100;
+}
+.app-logo{font-size:22px;font-weight:800;color:#e84040;letter-spacing:-0.5px}
+.app-logo span{color:#1c1c1e}
+.header-btn{background:none;border:none;font-size:22px;cursor:pointer;padding:4px}
+
+/* ===== NAVIGATION ===== */
+.nav-bar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  background:white;border-top:1px solid #e5e5ea;
+  display:flex;padding:6px 0 8px;
+  z-index:100;
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;
+  min-height:44px;padding:4px 2px;
+  border:none;background:none;
+  color:#8e8e93;font-size:10px;font-family:inherit;
+  transition:color 0.2s, opacity 0.15s;
+}
+.nav-item.active{color:#e84040}
+.nav-item:active{opacity:0.5}
+.nav-icon{font-size:19px;line-height:1}
+
+/* ===== TABS ===== */
+.tab-content{display:none;padding:14px}
+.tab-content.active{display:block}
+
+/* ===== CARDS ===== */
+.card{
+  background:white;border-radius:14px;padding:16px;
+  margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);
+}
+
+/* ===== STATS GRID ===== */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{
+  background:white;border-radius:14px;padding:14px 12px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.07);
+}
+.stat-label{font-size:11px;color:#8e8e93;margin-bottom:4px;font-weight:500}
+.stat-value{font-size:19px;font-weight:800;color:#1c1c1e;letter-spacing:-0.5px}
+.stat-value.positive{color:#34c759}
+.stat-value.negative{color:#e84040}
+
+/* ===== SECTION HEADERS ===== */
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.section-title{font-size:16px;font-weight:700}
+.section-count{font-size:13px;color:#8e8e93}
+
+/* ===== ITEM ROWS ===== */
+.item-row{
+  display:flex;align-items:flex-start;padding:12px 0;
+  border-bottom:1px solid #f2f2f7;
+  cursor:pointer;transition:background 0.15s;border-radius:8px;
+}
+.item-row:active{background:#f5f5f7}
+.item-row:last-child{border-bottom:none;padding-bottom:0}
+.item-thumb{
+  width:54px;height:54px;border-radius:10px;background:#f2f2f7;
+  margin-right:11px;flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-size:22px;overflow:hidden;
+}
+.item-thumb img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.item-info{flex:1;min-width:0}
+.item-name{
+  font-size:13px;font-weight:600;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  margin-bottom:2px;line-height:1.4;
+}
+.item-meta{font-size:11px;color:#8e8e93;margin-top:2px}
+.item-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-left:8px;flex-shrink:0}
+
+/* ===== STATUS BADGES ===== */
+.badge{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:700;white-space:nowrap}
+.badge-green{background:#e8f5e9;color:#2e7d32}
+.badge-red{background:#fce4ec;color:#c62828}
+.badge-blue{background:#e3f2fd;color:#1565c0}
+.badge-gray{background:#f2f2f7;color:#636366}
+
+/* ===== PROFIT BADGES ===== */
+.profit-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700}
+.profit-high{background:#e8f5e9;color:#2e7d32}
+.profit-med{background:#fff8e1;color:#f57f17}
+.profit-low{background:#fce4ec;color:#c62828}
+
+/* ===== BUTTONS ===== */
+.btn{
+  padding:12px 18px;border-radius:12px;border:none;cursor:pointer;
+  font-size:14px;font-weight:700;font-family:inherit;
+  min-height:44px;
+  display:inline-block;vertical-align:middle;text-align:center;
+  line-height:1.2;
+}
+.btn:active{opacity:0.65;transform:scale(0.97)}
+.btn-primary{background:#e84040;color:white}
+.btn-secondary{background:#f2f2f7;color:#1c1c1e}
+.btn-success{background:#34c759;color:white}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:9px;min-height:40px}
+.btn-full{width:100%;display:block}
+.btn-row{display:flex;gap:10px;margin-top:10px}
+.btn-row .btn{flex:1}
+
+.add-fab{
+  width:44px;height:44px;border-radius:50%;background:#e84040;
+  color:white;border:none;font-size:22px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(232,64,64,0.35);
+}
+.add-fab:active{opacity:0.65;transform:scale(0.94)}
+
+/* ===== SEARCH ===== */
+.search-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.search-bar{
+  flex:1;display:flex;align-items:center;background:white;
+  border-radius:12px;padding:10px 14px;gap:8px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.07);
+}
+.search-input{
+  flex:1;border:none;outline:none;
+  /* 16px未満だとiOSがズームする */
+  font-size:16px;
+  color:#1c1c1e;background:transparent;font-family:inherit;
+}
+.search-input::placeholder{color:#c7c7cc}
+
+/* ===== MONTH FILTER CHIPS ===== */
+.chip-row{
+  display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;
+  margin-bottom:14px;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{
+  flex-shrink:0;padding:8px 16px;border-radius:20px;
+  border:1.5px solid #e5e5ea;background:white;font-size:13px;
+  cursor:pointer;color:#636366;font-family:inherit;font-weight:500;
+  min-height:36px;transition:all 0.2s;
+}
+.chip:active{opacity:0.6}
+.chip.active{background:#e84040;color:white;border-color:#e84040}
+
+/* ===== FORMS ===== */
+.form-group{margin-bottom:14px}
+.form-label{
+  display:block;font-size:11px;color:#8e8e93;margin-bottom:6px;
+  font-weight:700;text-transform:uppercase;letter-spacing:0.6px;
+}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:12px 13px;border:1.5px solid #e5e5ea;
+  border-radius:11px;
+  /* iOS Safari: 16px未満だとフォーカス時に自動ズームが発生する */
+  font-size:16px;background:white;
+  outline:none;font-family:inherit;color:#1c1c1e;
+  transition:border-color 0.2s;
+  min-height:44px;
+}
+/* input/textareaだけappearanceをリセット (selectはiOSネイティブ表示を維持) */
+.form-input,.form-textarea{
+  -webkit-appearance:none;appearance:none;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#e84040}
+.form-textarea{height:90px;resize:vertical;line-height:1.6;min-height:90px}
+/* selectのラッパー: 矢印アイコンを疑似要素で追加 */
+.select-wrap{position:relative;display:block}
+.select-wrap::after{
+  content:'▾';position:absolute;right:13px;top:50%;transform:translateY(-50%);
+  color:#8e8e93;pointer-events:none;font-size:14px;
+}
+.select-wrap .form-select{padding-right:32px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.calc-box{
+  background:#f9f9f9;border-radius:11px;padding:12px 14px;
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:4px;
+}
+.calc-label{font-size:13px;color:#8e8e93}
+.calc-val{font-size:15px;font-weight:800}
+
+/* ===== ICON BUTTONS ===== */
+.icon-btn{
+  width:30px;height:30px;border-radius:8px;border:1.5px solid #e5e5ea;
+  background:white;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-size:13px;
+}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.45);z-index:200;
+  display:none;
+  /* iOS で display:none でもタッチを拾うことがあるため明示的に無効化 */
+  pointer-events:none;
+  visibility:hidden;
+  align-items:flex-end;justify-content:center;
+}
+.modal-overlay.active{
+  display:flex;
+  pointer-events:auto;
+  visibility:visible;
+}
+.modal{
+  background:white;border-radius:22px 22px 0 0;
+  padding:22px 18px 34px;
+  width:100%;max-width:480px;
+  max-height:90vh;overflow-y:auto;
+}
+.modal-handle{
+  width:38px;height:4px;background:#e5e5ea;border-radius:2px;
+  margin:0 auto 18px;
+}
+.modal-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:18px}
+
+/* ===== CHART ===== */
+.chart-wrap{position:relative;height:220px;margin-top:8px}
+
+/* ===== DATA ROWS ===== */
+.data-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:13px 0;border-bottom:1px solid #f2f2f7;
+}
+.data-row:last-child{border-bottom:none}
+.sync-dot{
+  font-size:13px;font-weight:700;color:#34c759;
+  display:flex;align-items:center;gap:5px;
+}
+.sync-dot::before{content:'●';font-size:8px}
+
+/* ===== TOGGLE ===== */
+.toggle{position:relative;width:50px;height:28px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-track{
+  position:absolute;cursor:pointer;
+  top:0;left:0;right:0;bottom:0;
+  background:#e5e5ea;border-radius:28px;transition:0.3s;
+}
+.toggle-track::before{
+  content:'';position:absolute;
+  height:22px;width:22px;left:3px;bottom:3px;
+  background:white;border-radius:50%;transition:0.3s;
+  box-shadow:0 1px 3px rgba(0,0,0,0.2);
+}
+input:checked+.toggle-track{background:#34c759}
+input:checked+.toggle-track::before{transform:translateX(22px)}
+
+/* ===== YAHOO AUCTION PREVIEW ===== */
+.ya-preview{
+  background:#f9f9f9;border:1.5px solid #e5e5ea;
+  border-radius:11px;padding:16px;min-height:180px;
+  font-size:13px;line-height:1.7;overflow-x:auto;
+}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;top:72px;left:50%;transform:translateX(-50%);
+  background:rgba(28,28,30,0.9);color:white;
+  padding:9px 22px;border-radius:22px;font-size:13px;
+  z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;
+  white-space:nowrap;
+}
+.toast.show{opacity:1}
+
+/* ===== EMPTY STATE ===== */
+.empty{text-align:center;padding:40px 20px;color:#8e8e93}
+.empty-icon{font-size:38px;margin-bottom:10px}
+
+/* ===== MONTH GROUP HEADER ===== */
+.month-group-head{
+  font-size:13px;font-weight:700;color:#8e8e93;
+  padding:10px 0 4px;
+}
+
+/* ===== DIVIDER ===== */
+.divider{border:none;border-top:1px solid #f2f2f7;margin:4px 0}
+
+/* ===== IMAGE UPLOAD ===== */
+.img-upload-area{
+  border:2px dashed #e5e5ea;border-radius:12px;
+  padding:0;cursor:pointer;overflow:hidden;
+  background:#fafafa;transition:border-color 0.2s;
+  position:relative;
+}
+.img-upload-area:hover{border-color:#e84040}
+.img-upload-area.has-img{border-style:solid;border-color:#e5e5ea;background:white}
+.img-upload-placeholder{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:6px;padding:20px;
+  color:#8e8e93;font-size:13px;
+}
+.img-upload-placeholder .up-icon{font-size:28px}
+.img-thumb-wrap{position:relative;width:100%}
+.img-thumb-preview{
+  width:100%;max-height:200px;object-fit:contain;
+  display:block;border-radius:10px;background:#f2f2f7;
+}
+.img-clear-btn{
+  position:absolute;top:6px;right:6px;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,0.55);color:white;border:none;
+  font-size:14px;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;line-height:1;
+}
+/* multi-photo grid */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.photo-cell{
+  aspect-ratio:1;border-radius:9px;overflow:hidden;
+  background:#f2f2f7;position:relative;cursor:pointer;
+}
+.photo-cell img{width:100%;height:100%;object-fit:cover}
+.photo-cell-add{
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;color:#c7c7cc;border:2px dashed #e5e5ea;border-radius:9px;
+}
+.photo-cell-del{
+  position:absolute;top:3px;right:3px;width:20px;height:20px;
+  border-radius:50%;background:rgba(0,0,0,0.5);color:white;
+  border:none;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ===== DESKTOP SHADOW ===== */
+@media(min-width:520px){
+  body{box-shadow:0 0 50px rgba(0,0,0,0.12)}
+}
+
+/* ===== PWA SAFE AREA (ホーム画面アプリ時のノッチ・ホームバー対応) ===== */
+@supports(padding-top: env(safe-area-inset-top)){
+  .app-header{padding-top:calc(14px + env(safe-area-inset-top))}
+  .nav-bar{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  body{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+}
+
+/* ===== 小画面対応 ===== */
+@media(max-width:390px){
+  .stats-grid{gap:8px}
+  .stat-value{font-size:17px}
+  .form-row{grid-template-columns:1fr}
+  .btn-row{flex-direction:column}
+  .btn-row .btn{flex:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ==============================
+     NOSCRIPT: ファイルアプリ(QuickLook)で開いた場合の案内
+     QuickLookはJavaScriptを実行しないため、このメッセージが表示される
+============================== -->
+<noscript>
+<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:99999;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN',sans-serif;
+            padding:30px;text-align:center;-webkit-text-size-adjust:100%">
+  <div style="font-size:72px;margin-bottom:20px">📱</div>
+  <div style="font-size:22px;font-weight:800;color:#e84040;margin-bottom:16px">Safariで開いてください</div>
+  <div style="font-size:15px;color:#1c1c1e;line-height:2;max-width:320px;background:#f2f2f7;border-radius:16px;padding:20px">
+    <strong>手順：</strong><br>
+    ① このファイルをタップ（プレビュー表示）<br>
+    ② 画面右上の <strong>□↑ 共有ボタン</strong> をタップ<br>
+    ③ <strong>「Safariで開く」</strong> を選択<br><br>
+    <span style="font-size:13px;color:#636366">
+      ※ ファイルアプリの「クイックルック」ではJavaScriptが動作しないため、
+      Safariで開く必要があります。
+    </span>
+  </div>
+</div>
+</noscript>
+
+<!-- JS ERROR BANNER (JSが動いているが初期化エラーが出た場合に表示) -->
+<div id="err-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;
+     background:#e84040;color:white;font-size:13px;padding:10px 14px;line-height:1.5;
+     font-family:-apple-system,sans-serif;white-space:pre-wrap;word-break:break-all"></div>
+<script>
+window.onerror = function(msg, src, line) {
+  var b = document.getElementById('err-banner');
+  if(b){ b.style.display='block'; b.textContent = '⚠️ JSエラー: ' + msg + '\n(line ' + line + ')'; }
+};
+</script>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div style="font-size:20px">🏷️</div>
+  <div class="app-logo">Seller<span>Book</span> Pro</div>
+  <button class="header-btn" onclick="exportAllData()" title="データをエクスポート">💾</button>
+</header>
+
+<!-- ==============================
+     TAB: 分析
+============================== -->
+<div id="tab-analytics" class="tab-content active">
+
+  <div class="chip-row" id="analytics-chips"></div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">売上</div>
+      <div class="stat-value" id="s-sales">¥0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">コスト</div>
+      <div class="stat-value" id="s-cost">¥0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">純利益</div>
+      <div class="stat-value positive" id="s-profit">¥0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">利益率</div>
+      <div class="stat-value positive" id="s-margin">0.0%</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-header" style="margin-bottom:4px">
+      <div class="section-title">月別推移</div>
+      <div style="display:flex;gap:12px;font-size:11px;align-items:center">
+        <span style="color:#4285f4">— 売上</span>
+        <span style="color:#e84040">— コスト</span>
+        <span style="color:#34c759">— 純利益</span>
+      </div>
+    </div>
+    <div class="chart-wrap"><div id="chart-wrap-inner" style="width:100%;height:220px"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:10px">月別サマリー</div>
+    <div id="monthly-summary"></div>
+  </div>
+
+</div>
+
+<!-- ==============================
+     TAB: 売上管理表
+============================== -->
+<div id="tab-sales" class="tab-content">
+
+  <div class="search-row">
+    <div class="search-bar">
+      <span style="color:#c7c7cc">🔍</span>
+      <input class="search-input" type="text" placeholder="商品名で探す" id="sales-search" oninput="renderSales()">
+    </div>
+    <button class="add-fab" onclick="openSaleModal(null)">＋</button>
+  </div>
+
+  <div class="chip-row" id="sales-chips"></div>
+
+  <div class="card">
+    <div class="section-header">
+      <div class="section-title">全ての商品</div>
+      <div class="section-count" id="sales-total">0個</div>
+    </div>
+    <div id="sales-list"></div>
+  </div>
+
+</div>
+
+<!-- ==============================
+     TAB: 商品マスタ
+============================== -->
+<div id="tab-products" class="tab-content">
+
+  <div class="search-row">
+    <div class="search-bar">
+      <span style="color:#c7c7cc">🔍</span>
+      <input class="search-input" type="text" placeholder="商品名で探す" id="product-search" oninput="renderProducts()">
+    </div>
+    <button class="add-fab" onclick="openProductModal(null)">＋</button>
+  </div>
+
+  <div class="card">
+    <div id="product-list"></div>
+  </div>
+
+</div>
+
+<!-- ==============================
+     TAB: ヤフオク出品
+============================== -->
+<div id="tab-yauction" class="tab-content">
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:14px">📋 出品情報入力</div>
+
+    <div class="form-group">
+      <label class="form-label">商品マスタから取り込む</label>
+      <select class="form-select" id="ya-link-product" onchange="yaFillFromProduct()">
+        <option value="">— 新規入力 —</option>
+      </select>
+    </div>
+
+    <!-- Product photo preview for auction -->
+    <div id="ya-photo-preview" style="display:none;margin-bottom:14px">
+      <div style="font-size:11px;color:#8e8e93;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">商品写真（出品に使用）</div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px" id="ya-photo-strip"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">出品タイトル <span style="color:#e84040">*</span></label>
+      <input type="text" class="form-input" id="ya-title" placeholder="例: 【ギルダン】バンドT ジョンレノン M">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">カテゴリ</label>
+        <select class="form-select" id="ya-category">
+          <option>メンズトップス</option>
+          <option>レディーストップス</option>
+          <option>バンドT・ロックT</option>
+          <option>古着全般</option>
+          <option>ビンテージ</option>
+          <option>ボトムス</option>
+          <option>アウター</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">商品の状態</label>
+        <select class="form-select" id="ya-condition">
+          <option>新品未使用</option>
+          <option>未使用に近い</option>
+          <option selected>目立った傷や汚れなし</option>
+          <option>やや傷や汚れあり</option>
+          <option>傷や汚れあり</option>
+          <option>全体的に状態が悪い</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">サイズ</label>
+        <select class="form-select" id="ya-size">
+          <option>XS</option><option>S</option><option>M</option>
+          <option>L</option><option>XL</option><option>XXL</option>
+          <option>フリー</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">カラー</label>
+        <input type="text" class="form-input" id="ya-color" placeholder="例: ブラック">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ブランド名</label>
+      <input type="text" class="form-input" id="ya-brand" placeholder="例: Gildan / H&M">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">商品説明</label>
+      <textarea class="form-textarea" id="ya-description" placeholder="商品の特徴、雰囲気など…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">状態の詳細（ダメージ等）</label>
+      <textarea class="form-textarea" id="ya-damage" placeholder="小さなシミあり / 首元少し伸び など…"></textarea>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px">実寸サイズ（cm）</div>
+    <div class="form-row" style="margin-bottom:10px">
+      <div class="form-group">
+        <label class="form-label">着丈</label>
+        <input type="number" class="form-input" id="ya-len" placeholder="65">
+      </div>
+      <div class="form-group">
+        <label class="form-label">身幅</label>
+        <input type="number" class="form-input" id="ya-wid" placeholder="52">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">肩幅</label>
+        <input type="number" class="form-input" id="ya-sho" placeholder="46">
+      </div>
+      <div class="form-group">
+        <label class="form-label">袖丈</label>
+        <input type="number" class="form-input" id="ya-slv" placeholder="22">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">開始価格（¥）</label>
+        <input type="number" class="form-input" id="ya-start" placeholder="1000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">即決価格（¥）</label>
+        <input type="number" class="form-input" id="ya-buynow" placeholder="3000">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">送料負担</label>
+        <select class="form-select" id="ya-shipping">
+          <option>落札者負担</option>
+          <option>送料無料（出品者負担）</option>
+          <option>着払い</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">配送方法</label>
+        <select class="form-select" id="ya-delivery">
+          <option>ゆうパック</option>
+          <option>クリックポスト</option>
+          <option>ゆうパケット</option>
+          <option>ネコポス</option>
+          <option>宅急便（ヤマト）</option>
+          <option>定形外郵便</option>
+          <option>未定</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">注意事項・その他</label>
+      <textarea class="form-textarea" id="ya-notes" style="height:80px">中古品のため、神経質な方はご入札をお控えください。
+素人採寸のため多少の誤差はご了承ください。
+コメントなし即購入・即決OK。</textarea>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary" style="flex:1" onclick="yaPreview()">👁 プレビュー</button>
+      <button class="btn btn-primary" style="flex:1" onclick="yaExport()">📄 HTML書き出し</button>
+    </div>
+  </div>
+
+  <div class="card" id="ya-preview-card" style="display:none">
+    <div class="section-header">
+      <div class="section-title">📄 プレビュー</div>
+      <button class="btn btn-sm btn-primary" onclick="yaExport()">書き出し</button>
+    </div>
+    <div class="ya-preview" id="ya-preview-body"></div>
+    <div style="margin-top:10px;font-size:12px;color:#8e8e93">
+      ※ このHTMLをヤフオクの「商品説明」欄にコピー&ペーストしてください
+    </div>
+  </div>
+
+</div>
+
+<!-- ==============================
+     TAB: データ管理
+============================== -->
+<div id="tab-data" class="tab-content">
+
+  <div class="card">
+    <div class="data-row">
+      <div>
+        <div style="font-weight:700;margin-bottom:2px">自動同期モード</div>
+        <div style="font-size:12px;color:#8e8e93">追加・編集・削除したデータが他のデバイスと同期されます</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked>
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="data-row">
+      <div>
+        <div style="font-weight:700">売上データ</div>
+        <div style="font-size:12px;color:#636366" id="sync-sales-count">端末: 0件</div>
+        <div style="font-size:11px;color:#8e8e93" id="sync-sales-date">最終同期: —</div>
+      </div>
+      <span class="sync-dot">同期済み</span>
+    </div>
+    <div class="data-row">
+      <div>
+        <div style="font-weight:700">商品マスタ</div>
+        <div style="font-size:12px;color:#636366" id="sync-products-count">端末: 0件</div>
+        <div style="font-size:11px;color:#8e8e93" id="sync-products-date">最終同期: —</div>
+      </div>
+      <span class="sync-dot">同期済み</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:12px">💾 データ管理</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="exportAllData()">📤 JSONエクスポート</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('file-import').click()">📥 JSONインポート</button>
+    </div>
+    <input type="file" id="file-import" accept=".json" style="display:none" onchange="importData(event)">
+
+    <div style="height:1px;background:#f2f2f7;margin:14px 0"></div>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:#636366">データをリセット</div>
+    <button class="btn btn-sm" style="background:#fce4ec;color:#c62828" onclick="clearData()">🗑️ 全データ削除してリセット</button>
+    <div style="margin-top:6px;font-size:12px;color:#8e8e93" id="ls-status"></div>
+
+    <div style="height:1px;background:#f2f2f7;margin:14px 0"></div>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:#636366">FileMaker Pro / CSV連携</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('sales')">📊 売上CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('products')">📦 商品CSV</button>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:#8e8e93;line-height:1.6">
+      CSVファイルはFileMaker ProやExcelで開けます。<br>
+      BOM付きUTF-8で出力するため文字化けしません。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:10px">📊 統計</div>
+    <div id="data-stats"></div>
+  </div>
+
+</div>
+
+<!-- ==============================
+     BOTTOM NAV
+============================== -->
+<nav class="nav-bar">
+  <button class="nav-item active" onclick="switchTab('analytics',this)">
+    <span class="nav-icon">📈</span>分析
+  </button>
+  <button class="nav-item" onclick="switchTab('sales',this)">
+    <span class="nav-icon">📋</span>売上管理表
+  </button>
+  <button class="nav-item" onclick="switchTab('products',this)">
+    <span class="nav-icon">📦</span>商品マスタ
+  </button>
+  <button class="nav-item" onclick="switchTab('yauction',this)">
+    <span class="nav-icon">🏷️</span>ヤフオク出品
+  </button>
+  <button class="nav-item" onclick="switchTab('data',this)">
+    <span class="nav-icon">⚙️</span>データ管理
+  </button>
+</nav>
+
+<!-- ==============================
+     MODAL: ダウンロード（iOS Safari用フォールバック）
+============================== -->
+<div class="modal-overlay" id="modal-download" onclick="if(event.target===this)closeDownloadModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-dl-title">ファイルを保存</div>
+    <p style="font-size:13px;color:#636366;margin-bottom:14px;line-height:1.6" id="modal-dl-desc">
+      下のテキストをコピーして、メモアプリなどに貼り付けて保存してください。
+    </p>
+    <textarea id="modal-dl-content" readonly
+      style="width:100%;height:200px;font-size:11px;font-family:monospace;
+             border:1px solid #e5e5ea;border-radius:10px;padding:10px;
+             background:#f9f9f9;resize:none;-webkit-user-select:all;user-select:all"
+    ></textarea>
+    <button onclick="copyDownloadContent()"
+      style="width:100%;margin-top:12px;padding:14px;border-radius:12px;border:none;
+             background:#e84040;color:white;font-size:15px;font-weight:700;cursor:pointer">
+      📋 全文をコピー
+    </button>
+    <button onclick="closeDownloadModal()"
+      style="width:100%;margin-top:8px;padding:12px;border-radius:12px;border:none;
+             background:#f2f2f7;color:#1c1c1e;font-size:14px;font-weight:600;cursor:pointer">
+      閉じる
+    </button>
+  </div>
+</div>
+
+<!-- ==============================
+     MODAL: 売上追加・編集
+============================== -->
+<div class="modal-overlay" id="modal-sale" onclick="if(event.target===this)closeSaleModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-sale-title">売上を追加</div>
+    <input type="hidden" id="m-sale-id">
+
+    <div class="form-group">
+      <label class="form-label">商品名 <span style="color:#e84040">*</span></label>
+      <input type="text" class="form-input" id="m-name" placeholder="商品名を入力">
+    </div>
+    <div class="form-group">
+      <label class="form-label">販売価格（¥） <span style="color:#e84040">*</span></label>
+      <input type="number" class="form-input" id="m-price" placeholder="2000" oninput="autoFee();recalc()">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">仕入れ額（¥）</label>
+        <input type="number" class="form-input" id="m-purchase" placeholder="500" oninput="recalc()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">送料（¥）</label>
+        <input type="number" class="form-input" id="m-shipping" placeholder="215" oninput="recalc()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">梱包費（¥）</label>
+        <input type="number" class="form-input" id="m-pack" placeholder="0" oninput="recalc()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">手数料（¥）</label>
+        <input type="number" class="form-input" id="m-fee" placeholder="200" oninput="recalc()">
+      </div>
+    </div>
+    <div style="font-size:11px;color:#8e8e93;margin-bottom:10px;margin-top:-8px">
+      ※ 手数料は販売価格入力時に10%自動計算します
+    </div>
+
+    <div class="calc-box">
+      <span class="calc-label">純利益</span>
+      <span class="calc-val" id="m-profit-disp">¥—</span>
+    </div>
+    <div class="calc-box" style="margin-top:4px">
+      <span class="calc-label">利益率</span>
+      <span class="calc-val" id="m-margin-disp">—%</span>
+    </div>
+
+    <div style="height:14px"></div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">取引日</label>
+        <input type="date" class="form-input" id="m-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">プラットフォーム</label>
+        <select class="form-select" id="m-platform">
+          <option>ヤフオク</option>
+          <option>メルカリ</option>
+          <option>ラクマ</option>
+          <option>PayPayフリマ</option>
+          <option>その他</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeSaleModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveSale()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================
+     MODAL: 商品追加・編集
+============================== -->
+<div class="modal-overlay" id="modal-product" onclick="if(event.target===this)closeProductModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-product-title">商品を追加</div>
+    <input type="hidden" id="p-id">
+
+    <div class="form-group">
+      <label class="form-label">商品名 <span style="color:#e84040">*</span></label>
+      <input type="text" class="form-input" id="p-name" placeholder="商品名を入力">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">カテゴリ</label>
+        <select class="form-select" id="p-category">
+          <option>トップス</option><option>ボトムス</option>
+          <option>アウター</option><option>シューズ</option>
+          <option>アクセサリー</option><option>その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">サイズ</label>
+        <select class="form-select" id="p-size">
+          <option>XS</option><option>S</option><option>M</option>
+          <option>L</option><option>XL</option><option>XXL</option>
+          <option>フリー</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ブランド</label>
+      <input type="text" class="form-input" id="p-brand" placeholder="ブランド名">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">仕入れ価格（¥）</label>
+        <input type="number" class="form-input" id="p-purchase" placeholder="500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">出品価格（¥）</label>
+        <input type="number" class="form-input" id="p-listprice" placeholder="2000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">在庫数</label>
+        <input type="number" class="form-input" id="p-stock" value="1" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">状態</label>
+        <select class="form-select" id="p-status">
+          <option>出品中</option><option>在庫</option>
+          <option>売却済</option><option>廃棄</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">登録日</label>
+      <input type="date" class="form-input" id="p-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <textarea class="form-textarea" style="height:60px" id="p-notes" placeholder="自由メモ…"></textarea>
+    </div>
+
+    <!-- ▼ 写真 -->
+    <div class="form-group">
+      <label class="form-label">商品写真（最大6枚）</label>
+      <div class="photo-grid" id="p-photo-grid"></div>
+      <input type="file" id="p-photo-input" accept="image/*" multiple style="display:none" onchange="pAddPhotos(event)">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeProductModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveProduct()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================
+     JAVASCRIPT
+============================== -->
+<script>
+'use strict';
+
+// ============================================================
+// SAMPLE DATA
+// ============================================================
+let D = {
+  products: [
+    {id:1,name:"トップス-L【ブラックサバス】バンドTシャツ",category:"トップス",size:"L",brand:"Black Sabbath",purchase:600,listPrice:2000,stock:1,status:"出品中",date:"2026-08-10",notes:"",images:[]},
+    {id:2,name:"トップス-M【JIMI HENDRIX】バンドTシャツ",category:"トップス",size:"M",brand:"Jimi Hendrix",purchase:1200,listPrice:5000,stock:1,status:"出品中",date:"2026-06-27",notes:"",images:[]},
+    {id:3,name:"トップス-M【ZION】ボブ・マーリー タイダイ",category:"トップス",size:"M",brand:"Bob Marley",purchase:1500,listPrice:5000,stock:0,status:"出品中",date:"2026-07-03",notes:"",images:[]},
+    {id:4,name:"トップス-L【ディズニー】アロハシャツ",category:"トップス",size:"L",brand:"Disney",purchase:800,listPrice:3000,stock:1,status:"出品中",date:"2026-07-03",notes:"",images:[]},
+    {id:5,name:"トップス-M【RAMONES】ラモーンズ バンドTシャツ",category:"トップス",size:"M",brand:"Ramones",purchase:1000,listPrice:4000,stock:1,status:"出品中",date:"2026-07-04",notes:"",images:[]},
+    {id:6,name:"【ギルダン】ジョンレノン リンガーTシャツ メンズM ビートルズ イラスト",category:"トップス",size:"M",brand:"Gildan",purchase:525,listPrice:2650,stock:0,status:"売却済",date:"2026-05-23",notes:"",images:[]},
+    {id:7,name:"【エイチアンドエム】メタリカ METALLICA ノースリーブ タンクトップ",category:"トップス",size:"M",brand:"H&M",purchase:550,listPrice:2000,stock:0,status:"売却済",date:"2026-06-20",notes:"",images:[]},
+    {id:8,name:"【カラク】プリントTシャツ 神奈川沖浪裏と波乗り猫浮世絵風 メンズS",category:"トップス",size:"S",brand:"カラク",purchase:1500,listPrice:4500,stock:0,status:"売却済",date:"2026-06-02",notes:"",images:[]},
+    {id:9,name:"【ヒステリックグラマー】サイズS ファティーグシャツ ミリタリー Hタグ",category:"トップス",size:"S",brand:"Hysteric Glamour",purchase:1800,listPrice:4700,stock:0,status:"売却済",date:"2024-06-07",notes:"",images:[]},
+    {id:10,name:"【エイチアンドエム】半袖シャツ メンズ",category:"トップス",size:"M",brand:"H&M",purchase:800,listPrice:3100,stock:0,status:"売却済",date:"2026-06-20",notes:"",images:[]},
+  ],
+  sales: [
+    {id:1,name:"【ギルダン】ジョンレノン リンガーTシャツ メンズM ビートルズ イラスト",price:2650,purchase:525,shipping:215,pack:0,fee:265,profit:1645,date:"2026-07-23",platform:"ヤフオク"},
+    {id:2,name:"【エイチアンドエム】メタリカ METALLICA ノースリーブ タンクトップ ロックTシャツ",price:2000,purchase:550,shipping:215,pack:0,fee:200,profit:1035,date:"2026-07-16",platform:"ヤフオク"},
+    {id:3,name:"【カラク】プリントTシャツ 神奈川沖浪裏と波乗り猫浮世絵風 メンズS",price:4500,purchase:1500,shipping:215,pack:0,fee:450,profit:2335,date:"2026-07-09",platform:"ヤフオク"},
+    {id:4,name:"【ヒステリックグラマー】サイズS ファティーグシャツ ミリタリー Hタグ",price:4700,purchase:1800,shipping:215,pack:0,fee:470,profit:2215,date:"2026-07-01",platform:"ヤフオク"},
+    {id:5,name:"【エイチアンドエム】半袖シャツ メンズ",price:3100,purchase:800,shipping:215,pack:0,fee:310,profit:1775,date:"2026-05-30",platform:"ヤフオク"},
+    {id:6,name:"ビンテージ古着Tシャツ セット売り",price:8000,purchase:2000,shipping:600,pack:100,fee:800,profit:4500,date:"2026-05-15",platform:"ヤフオク"},
+    {id:7,name:"ビンテージ半袖シャツ 柄物",price:6500,purchase:2200,shipping:215,pack:0,fee:650,profit:3435,date:"2026-06-20",platform:"ヤフオク"},
+    {id:8,name:"アメカジ ダメージデニム",price:4200,purchase:1000,shipping:500,pack:0,fee:420,profit:2280,date:"2026-06-05",platform:"メルカリ"},
+  ],
+  nextPid: 11,
+  nextSid: 9,
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+const yen = n => '¥' + Math.round(n||0).toLocaleString('ja');
+const fmtDate = s => { if(!s) return '—'; const d=new Date(s); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`; };
+const monthKey = s => { if(!s) return ''; const d=new Date(s); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
+const monthLabel = k => { const [y,m]=k.split('-'); return `${y}年${parseInt(m)}月`; };
+const today = () => new Date().toISOString().split('T')[0];
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+function allMonths() {
+  const set = new Set(D.sales.map(s => monthKey(s.date)));
+  return [...set].sort().reverse();
+}
+
+function monthStats(m) {
+  const rows = m === 'all' ? D.sales : D.sales.filter(s => monthKey(s.date) === m);
+  const sales = rows.reduce((a,s) => a+s.price, 0);
+  const cost = rows.reduce((a,s) => a+s.purchase+s.shipping+s.pack+s.fee, 0);
+  const profit = rows.reduce((a,s) => a+s.profit, 0);
+  const margin = sales > 0 ? profit/sales*100 : 0;
+  return {sales, cost, profit, margin, count: rows.length};
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='analytics') renderAnalytics();
+  if(name==='sales') renderSales();
+  if(name==='products') renderProducts();
+  if(name==='yauction') fillYaProductSelect();
+  if(name==='data') renderDataTab();
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+let selMonth = null;
+
+function renderAnalytics() {
+  const months = allMonths();
+  if(!selMonth && months.length) selMonth = months[0];
+
+  // Chips
+  const chipsEl = document.getElementById('analytics-chips');
+  chipsEl.innerHTML = months.map(m => `
+    <button class="chip${m===selMonth?' active':''}" onclick="selMonth='${m}';renderAnalytics()">
+      ${monthLabel(m)}
+    </button>`).join('');
+
+  // Stats
+  const st = monthStats(selMonth || 'all');
+  document.getElementById('s-sales').textContent = yen(st.sales);
+  document.getElementById('s-cost').textContent = yen(st.cost);
+  document.getElementById('s-profit').textContent = yen(st.profit);
+  document.getElementById('s-margin').textContent = st.margin.toFixed(1)+'%';
+
+  // Chart — last 6 months + current month
+  const chartMonths = [...new Set([...months].reverse())].slice(-6);
+  const curM = monthKey(today());
+  if(!chartMonths.includes(curM)) chartMonths.push(curM);
+
+  const labels = chartMonths.map(m => monthLabel(m));
+  const dSales  = chartMonths.map(m => monthStats(m).sales);
+  const dCost   = chartMonths.map(m => monthStats(m).cost);
+  const dProfit = chartMonths.map(m => monthStats(m).profit);
+
+  drawSvgChart('chart-wrap-inner', labels, [
+    {data:dSales,  color:'#4285f4', label:'売上'},
+    {data:dCost,   color:'#e84040', label:'コスト'},
+    {data:dProfit, color:'#34c759', label:'純利益'},
+  ]);
+
+  // Monthly summary table
+  const sumEl = document.getElementById('monthly-summary');
+  sumEl.innerHTML = months.map(m => {
+    const s = monthStats(m);
+    return `<div class="data-row">
+      <div>
+        <div style="font-weight:700">${monthLabel(m)}</div>
+        <div style="font-size:12px;color:#8e8e93">${s.count}件 ｜ 利益率 ${s.margin.toFixed(1)}%</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:700">${yen(s.sales)}</div>
+        <div style="font-size:13px;color:#34c759;font-weight:700">+${yen(s.profit)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty"><div class="empty-icon">📊</div><div>データなし</div></div>';
+}
+
+// ============================================================
+// SALES
+// ============================================================
+let selSalesMonth = 'all';
+
+function renderSales() {
+  const months = allMonths();
+  const chipsEl = document.getElementById('sales-chips');
+  chipsEl.innerHTML = `<button class="chip${selSalesMonth==='all'?' active':''}" onclick="selSalesMonth='all';renderSales()">全て</button>` +
+    months.map(m => `<button class="chip${selSalesMonth===m?' active':''}" onclick="selSalesMonth='${m}';renderSales()">${monthLabel(m)}</button>`).join('');
+
+  const q = document.getElementById('sales-search').value.toLowerCase();
+  let rows = D.sales.filter(s => {
+    if(selSalesMonth!=='all' && monthKey(s.date)!==selSalesMonth) return false;
+    if(q && !s.name.toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b) => new Date(b.date)-new Date(a.date));
+
+  document.getElementById('sales-total').textContent = rows.length+'個';
+
+  if(!rows.length) {
+    document.getElementById('sales-list').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>売上データがありません</div></div>';
+    return;
+  }
+
+  // Group by month
+  const groups = {};
+  rows.forEach(s => { const k=monthKey(s.date); if(!groups[k]) groups[k]=[]; groups[k].push(s); });
+
+  document.getElementById('sales-list').innerHTML =
+    Object.entries(groups)
+      .sort(([a],[b]) => b.localeCompare(a))
+      .map(([m, arr]) => `
+        <div class="month-group-head">${monthLabel(m)}</div>
+        ${arr.map(s => {
+          const margin = s.price>0 ? s.profit/s.price*100 : 0;
+          const mc = margin>=50?'profit-high':margin>=30?'profit-med':'profit-low';
+          // Try to find product image by name match
+          const matched = D.products.find(p => s.name.includes(p.name.slice(0,10)) || p.name.includes(s.name.slice(0,10)));
+          const sImg = (matched && matched.images && matched.images.length) ? matched.images[0] : null;
+          const thumbHtml = sImg
+            ? `<img src="${sImg}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`
+            : `<span style="font-size:22px">👕</span>`;
+          return `<div class="item-row">
+            <div class="item-thumb">${thumbHtml}</div>
+            <div class="item-info">
+              <div class="item-name">🟣 ${esc(s.name)}</div>
+              <div class="item-meta">${fmtDate(s.date)} ｜ ${s.platform||'ヤフオク'}</div>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+                <span style="font-size:13px;font-weight:800">${yen(s.profit)}</span>
+                <span class="profit-badge ${mc}">${margin.toFixed(1)}%</span>
+              </div>
+              <div style="font-size:11px;color:#8e8e93;margin-top:3px">
+                販売${yen(s.price)} ｜ 仕入${yen(s.purchase)} ｜ 送料${yen(s.shipping)} ｜ 手数料${yen(s.fee)}
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <button class="icon-btn" onclick="openSaleModal(${s.id})">✏️</button>
+              <button class="icon-btn" onclick="delSale(${s.id})">🗑️</button>
+            </div>
+          </div>`;
+        }).join('')}`
+      ).join('');
+}
+
+// Sale Modal
+function openSaleModal(id) {
+  const s = id ? D.sales.find(x=>x.id===id) : null;
+  document.getElementById('modal-sale-title').textContent = s ? '売上を編集' : '売上を追加';
+  document.getElementById('m-sale-id').value = s ? s.id : '';
+  document.getElementById('m-name').value = s ? s.name : '';
+  document.getElementById('m-price').value = s ? s.price : '';
+  document.getElementById('m-purchase').value = s ? s.purchase : '';
+  document.getElementById('m-shipping').value = s ? s.shipping : 215;
+  document.getElementById('m-pack').value = s ? s.pack : 0;
+  document.getElementById('m-fee').value = s ? s.fee : '';
+  document.getElementById('m-date').value = s ? s.date : today();
+  document.getElementById('m-platform').value = s ? (s.platform||'ヤフオク') : 'ヤフオク';
+  recalc();
+  document.getElementById('modal-sale').classList.add('active');
+}
+function closeSaleModal() { document.getElementById('modal-sale').classList.remove('active'); }
+
+function autoFee() {
+  const p = parseFloat(document.getElementById('m-price').value)||0;
+  document.getElementById('m-fee').value = Math.round(p*0.1);
+}
+function recalc() {
+  const price    = parseFloat(document.getElementById('m-price').value)||0;
+  const purchase = parseFloat(document.getElementById('m-purchase').value)||0;
+  const shipping = parseFloat(document.getElementById('m-shipping').value)||0;
+  const pack     = parseFloat(document.getElementById('m-pack').value)||0;
+  const fee      = parseFloat(document.getElementById('m-fee').value)||0;
+  const profit = price - purchase - shipping - pack - fee;
+  const margin = price>0 ? profit/price*100 : 0;
+  const pEl = document.getElementById('m-profit-disp');
+  const mEl = document.getElementById('m-margin-disp');
+  pEl.textContent = yen(profit);
+  pEl.style.color = profit>=0?'#34c759':'#e84040';
+  mEl.textContent = margin.toFixed(1)+'%';
+  mEl.style.color = margin>=30?'#34c759':'#e84040';
+}
+
+function saveSale() {
+  const name = document.getElementById('m-name').value.trim();
+  if(!name) { alert('商品名を入力してください'); return; }
+  const price    = parseFloat(document.getElementById('m-price').value)||0;
+  const purchase = parseFloat(document.getElementById('m-purchase').value)||0;
+  const shipping = parseFloat(document.getElementById('m-shipping').value)||0;
+  const pack     = parseFloat(document.getElementById('m-pack').value)||0;
+  const fee      = parseFloat(document.getElementById('m-fee').value)||0;
+  const profit   = price - purchase - shipping - pack - fee;
+  const obj = {
+    name, price, purchase, shipping, pack, fee, profit,
+    date: document.getElementById('m-date').value,
+    platform: document.getElementById('m-platform').value,
+  };
+  const eid = document.getElementById('m-sale-id').value;
+  if(eid) {
+    const i = D.sales.findIndex(s=>s.id===parseInt(eid));
+    if(i>=0) D.sales[i] = {...D.sales[i], ...obj};
+  } else {
+    obj.id = D.nextSid++;
+    D.sales.push(obj);
+  }
+  closeSaleModal();
+  saveData();
+  renderSales();
+  toast('✅ 保存しました');
+}
+
+function delSale(id) {
+  if(!confirm('この売上データを削除しますか？')) return;
+  D.sales = D.sales.filter(s=>s.id!==id);
+  saveData();
+  renderSales();
+  toast('🗑️ 削除しました');
+}
+
+// ============================================================
+// PRODUCTS
+// ============================================================
+function renderProducts() {
+  const q = document.getElementById('product-search').value.toLowerCase();
+  const rows = D.products
+    .filter(p => !q || p.name.toLowerCase().includes(q) || (p.brand||'').toLowerCase().includes(q))
+    .sort((a,b) => new Date(b.date)-new Date(a.date));
+
+  if(!rows.length) {
+    document.getElementById('product-list').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>商品がありません</div></div>';
+    return;
+  }
+
+  document.getElementById('product-list').innerHTML = rows.map(p => {
+    const dot = p.status==='売却済'?'🟣':'🔴';
+    const stockBadge = p.stock>0
+      ? `<span class="badge badge-green">在庫 ${p.stock}</span>`
+      : `<span class="badge badge-gray">在庫 0</span>`;
+    const firstImg = (p.images && p.images.length) ? p.images[0] : null;
+    const thumbHtml = firstImg
+      ? `<img src="${firstImg}" alt="商品写真" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`
+      : `<span style="font-size:22px">👕</span>`;
+    const photoBadge = (p.images && p.images.length > 1)
+      ? `<span style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,0.55);color:white;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px">+${p.images.length-1}</span>` : '';
+    return `<div class="item-row">
+      <div class="item-thumb" style="position:relative;cursor:pointer" onclick="openProductModal(${p.id})">
+        ${thumbHtml}${photoBadge}
+      </div>
+      <div class="item-info">
+        <div class="item-name">${dot} ${esc(p.name)}</div>
+        <div class="item-meta">${fmtDate(p.date)} ｜ ${yen(p.listPrice)}</div>
+        ${p.brand ? `<div class="item-meta">${esc(p.brand)} / ${p.size||''}</div>` : ''}
+      </div>
+      <div class="item-right">
+        ${stockBadge}
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn" onclick="openProductModal(${p.id})">✏️</button>
+          <button class="icon-btn" onclick="delProduct(${p.id})">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Pending images for the currently-open product modal (base64 strings)
+let pendingImages = [];
+
+function openProductModal(id) {
+  const p = id ? D.products.find(x=>x.id===id) : null;
+  document.getElementById('modal-product-title').textContent = p ? '商品を編集' : '商品を追加';
+  document.getElementById('p-id').value = p ? p.id : '';
+  document.getElementById('p-name').value = p ? p.name : '';
+  document.getElementById('p-category').value = p ? (p.category||'トップス') : 'トップス';
+  document.getElementById('p-size').value = p ? (p.size||'M') : 'M';
+  document.getElementById('p-brand').value = p ? (p.brand||'') : '';
+  document.getElementById('p-purchase').value = p ? (p.purchase||'') : '';
+  document.getElementById('p-listprice').value = p ? (p.listPrice||'') : '';
+  document.getElementById('p-stock').value = p !== null && p ? p.stock : 1;
+  document.getElementById('p-status').value = p ? (p.status||'出品中') : '出品中';
+  document.getElementById('p-date').value = p ? (p.date||today()) : today();
+  document.getElementById('p-notes').value = p ? (p.notes||'') : '';
+  pendingImages = p ? [...(p.images||[])] : [];
+  renderPhotoGrid();
+  document.getElementById('modal-product').classList.add('active');
+}
+function closeProductModal() {
+  document.getElementById('modal-product').classList.remove('active');
+  pendingImages = [];
+}
+
+function renderPhotoGrid() {
+  const MAX = 6;
+  const grid = document.getElementById('p-photo-grid');
+  let html = pendingImages.map((src, i) => `
+    <div class="photo-cell">
+      <img src="${src}" alt="写真${i+1}">
+      <button class="photo-cell-del" onclick="pRemovePhoto(${i})" title="削除">✕</button>
+    </div>`).join('');
+  if(pendingImages.length < MAX) {
+    html += `<div class="photo-cell photo-cell-add" onclick="document.getElementById('p-photo-input').click()" title="写真を追加">＋</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function pAddPhotos(e) {
+  const MAX = 6;
+  const files = Array.from(e.target.files);
+  const remaining = MAX - pendingImages.length;
+  const toAdd = files.slice(0, remaining);
+  let loaded = 0;
+  toAdd.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      pendingImages.push(ev.target.result);
+      loaded++;
+      if(loaded === toAdd.length) renderPhotoGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+  if(files.length > remaining) toast(`⚠️ 最大6枚まで（${files.length - remaining}枚スキップ）`);
+}
+
+function pRemovePhoto(idx) {
+  pendingImages.splice(idx, 1);
+  renderPhotoGrid();
+}
+
+function saveProduct() {
+  const name = document.getElementById('p-name').value.trim();
+  if(!name) { alert('商品名を入力してください'); return; }
+  const obj = {
+    name,
+    category: document.getElementById('p-category').value,
+    size: document.getElementById('p-size').value,
+    brand: document.getElementById('p-brand').value,
+    purchase: parseFloat(document.getElementById('p-purchase').value)||0,
+    listPrice: parseFloat(document.getElementById('p-listprice').value)||0,
+    stock: parseInt(document.getElementById('p-stock').value)||0,
+    status: document.getElementById('p-status').value,
+    date: document.getElementById('p-date').value,
+    notes: document.getElementById('p-notes').value,
+    images: [...pendingImages],
+  };
+  const eid = document.getElementById('p-id').value;
+  if(eid) {
+    const i = D.products.findIndex(p=>p.id===parseInt(eid));
+    if(i>=0) D.products[i] = {...D.products[i], ...obj};
+  } else {
+    obj.id = D.nextPid++;
+    D.products.push(obj);
+  }
+  closeProductModal();
+  saveData();
+  renderProducts();
+  fillYaProductSelect();
+  toast('✅ 保存しました');
+}
+
+function delProduct(id) {
+  if(!confirm('この商品を削除しますか？')) return;
+  D.products = D.products.filter(p=>p.id!==id);
+  saveData();
+  renderProducts();
+  fillYaProductSelect();
+  toast('🗑️ 削除しました');
+}
+
+// ============================================================
+// YAHOO AUCTION
+// ============================================================
+function fillYaProductSelect() {
+  const el = document.getElementById('ya-link-product');
+  if(!el) return;
+  el.innerHTML = '<option value="">— 新規入力 —</option>' +
+    D.products.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+}
+
+function yaFillFromProduct() {
+  const id = parseInt(document.getElementById('ya-link-product').value);
+  const preview = document.getElementById('ya-photo-preview');
+  const strip   = document.getElementById('ya-photo-strip');
+
+  if(!id) { preview.style.display='none'; strip.innerHTML=''; return; }
+  const p = D.products.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('ya-title').value = p.name;
+  document.getElementById('ya-size').value = p.size||'M';
+  document.getElementById('ya-brand').value = p.brand||'';
+  document.getElementById('ya-start').value = Math.round((p.listPrice||0)*0.7);
+  document.getElementById('ya-buynow').value = p.listPrice||'';
+
+  // Show photo strip
+  if(p.images && p.images.length) {
+    strip.innerHTML = p.images.map((src, i) => `
+      <img src="${src}" alt="写真${i+1}"
+        style="height:80px;width:80px;object-fit:cover;border-radius:9px;flex-shrink:0;border:2px solid #e5e5ea;cursor:pointer"
+        title="写真${i+1}">`).join('');
+    preview.style.display = 'block';
+  } else {
+    strip.innerHTML = '<span style="color:#8e8e93;font-size:13px">写真なし（商品マスタに写真を追加してください）</span>';
+    preview.style.display = 'block';
+  }
+}
+
+function yaPreview() {
+  const html = buildYaHtml();
+  document.getElementById('ya-preview-body').innerHTML = html;
+  document.getElementById('ya-preview-card').style.display = 'block';
+  document.getElementById('ya-preview-card').scrollIntoView({behavior:'smooth'});
+}
+
+function buildYaHtml() {
+  const title    = document.getElementById('ya-title').value      || '（タイトル未入力）';
+  const cat      = document.getElementById('ya-category').value;
+  const cond     = document.getElementById('ya-condition').value;
+  const size     = document.getElementById('ya-size').value;
+  const color    = document.getElementById('ya-color').value;
+  const brand    = document.getElementById('ya-brand').value;
+  const desc     = document.getElementById('ya-description').value;
+  const damage   = document.getElementById('ya-damage').value;
+  const len      = document.getElementById('ya-len').value;
+  const wid      = document.getElementById('ya-wid').value;
+  const sho      = document.getElementById('ya-sho').value;
+  const slv      = document.getElementById('ya-slv').value;
+  const start    = document.getElementById('ya-start').value;
+  const buynow   = document.getElementById('ya-buynow').value;
+  const shipping = document.getElementById('ya-shipping').value;
+  const delivery = document.getElementById('ya-delivery').value;
+  const notes    = document.getElementById('ya-notes').value;
+
+  const hasMeasure = len||wid||sho||slv;
+
+  return `<!-- Yahoo Auction Listing HTML / Generated by SellerBook Pro -->
+<table border="0" cellpadding="0" cellspacing="0" width="100%"
+  style="font-family:Arial,'Hiragino Kaku Gothic ProN',sans-serif;font-size:14px;line-height:1.8;color:#222;max-width:640px;margin:0 auto;">
+
+  <!-- ▼ TITLE BAR -->
+  <tr>
+    <td style="background:#1a1a1a;color:#ffffff;padding:12px 16px;font-size:16px;font-weight:bold;border-radius:4px 4px 0 0;">
+      ★ ${esc(title)}
+    </td>
+  </tr>
+
+  <tr><td style="padding:16px 2px;">
+
+    <!-- ▼ 商品説明 -->
+    ${desc ? `
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;">
+      <tr><td style="background:#f5f5f5;border-left:4px solid #1a1a1a;padding:8px 12px;font-weight:bold;">▼ 商品説明</td></tr>
+      <tr><td style="padding:10px 12px;white-space:pre-wrap;line-height:1.8;">${esc(desc)}</td></tr>
+    </table>` : ''}
+
+    <!-- ▼ 商品詳細 -->
+    <table border="1" cellpadding="8" cellspacing="0" width="100%"
+      style="border-color:#ddd;border-collapse:collapse;margin-bottom:16px;">
+      <tr>
+        <td colspan="2" style="background:#1a1a1a;color:#fff;font-weight:bold;padding:8px 12px;">▼ 商品詳細</td>
+      </tr>
+      ${brand ? `<tr><td style="background:#f9f9f9;font-weight:bold;width:130px;">ブランド</td><td>${esc(brand)}</td></tr>` : ''}
+      <tr><td style="background:#f9f9f9;font-weight:bold;">カテゴリ</td><td>${esc(cat)}</td></tr>
+      <tr><td style="background:#f9f9f9;font-weight:bold;">商品の状態</td><td>${esc(cond)}</td></tr>
+      <tr><td style="background:#f9f9f9;font-weight:bold;">サイズ</td><td>${esc(size)}</td></tr>
+      ${color ? `<tr><td style="background:#f9f9f9;font-weight:bold;">カラー</td><td>${esc(color)}</td></tr>` : ''}
+    </table>
+
+    <!-- ▼ 実寸サイズ -->
+    ${hasMeasure ? `
+    <table border="1" cellpadding="8" cellspacing="0" width="100%"
+      style="border-color:#ddd;border-collapse:collapse;margin-bottom:16px;text-align:center;">
+      <tr>
+        <td colspan="4" style="background:#1a1a1a;color:#fff;font-weight:bold;padding:8px 12px;text-align:left;">▼ 実寸サイズ（参考値）</td>
+      </tr>
+      <tr style="background:#f5f5f5;font-weight:bold;">
+        <td>着丈</td><td>身幅</td><td>肩幅</td><td>袖丈</td>
+      </tr>
+      <tr>
+        <td>${len?len+'cm':'—'}</td>
+        <td>${wid?wid+'cm':'—'}</td>
+        <td>${sho?sho+'cm':'—'}</td>
+        <td>${slv?slv+'cm':'—'}</td>
+      </tr>
+      <tr>
+        <td colspan="4" style="font-size:12px;color:#888;text-align:left;">
+          ※ 素人採寸のため若干の誤差があります。ご了承ください。
+        </td>
+      </tr>
+    </table>` : ''}
+
+    <!-- ▼ 状態について -->
+    ${damage ? `
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;">
+      <tr><td style="background:#fff8e1;border-left:4px solid #ffc107;padding:8px 12px;font-weight:bold;">⚠ 状態の詳細・ダメージについて</td></tr>
+      <tr><td style="padding:10px 12px;background:#fffde7;white-space:pre-wrap;line-height:1.8;">${esc(damage)}</td></tr>
+    </table>` : ''}
+
+    <!-- ▼ 取引情報 -->
+    <table border="1" cellpadding="8" cellspacing="0" width="100%"
+      style="border-color:#ddd;border-collapse:collapse;margin-bottom:16px;">
+      <tr>
+        <td colspan="2" style="background:#1a1a1a;color:#fff;font-weight:bold;padding:8px 12px;">▼ 取引情報</td>
+      </tr>
+      ${start ? `<tr><td style="background:#f9f9f9;font-weight:bold;width:130px;">開始価格</td><td>¥${parseInt(start).toLocaleString('ja')}</td></tr>` : ''}
+      ${buynow ? `<tr><td style="background:#f9f9f9;font-weight:bold;">即決価格</td><td style="color:#c0392b;font-weight:bold;font-size:16px;">¥${parseInt(buynow).toLocaleString('ja')}</td></tr>` : ''}
+      <tr><td style="background:#f9f9f9;font-weight:bold;">送料</td><td>${esc(shipping)}</td></tr>
+      <tr><td style="background:#f9f9f9;font-weight:bold;">配送方法</td><td>${esc(delivery)}</td></tr>
+    </table>
+
+    <!-- ▼ 注意事項 -->
+    ${notes ? `
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;">
+      <tr><td style="background:#e8f5e9;border-left:4px solid #4caf50;padding:8px 12px;font-weight:bold;">📝 注意事項・その他</td></tr>
+      <tr><td style="padding:10px 12px;background:#f1f8e9;white-space:pre-wrap;line-height:1.8;">${esc(notes)}</td></tr>
+    </table>` : ''}
+
+    <p style="text-align:center;font-size:13px;color:#999;margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
+      最後までご覧いただきありがとうございます。<br>
+      ご不明な点はお気軽にご質問ください😊
+    </p>
+
+  </td></tr>
+</table>`;
+}
+
+function yaExport() {
+  const title = document.getElementById('ya-title').value || 'ヤフオク出品';
+  const body  = buildYaHtml();
+  const full  = `<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="UTF-8">\n<title>${esc(title)}</title>\n</head>\n<body>\n${body}\n</body>\n</html>`;
+  const fname = `yahooauction_${today()}.html`;
+
+  if (isIOS()) {
+    // ① ファイル共有 (iOS 15+)
+    if (canShareFiles()) {
+      const file = new File([full], fname, {type:'text/html'});
+      navigator.share({files:[file], title:title})
+        .then(()=> toast('📄 共有しました'))
+        .catch(err=>{ if(err.name!=='AbortError') yaExportFallback(full,fname); });
+      return;
+    }
+    // ② テキスト共有
+    if (navigator.share) {
+      try {
+        navigator.share({title:title, text:full})
+          .then(()=>toast('📤 共有しました'))
+          .catch(err=>{ if(err.name!=='AbortError') yaExportFallback(full,fname); });
+        return;
+      } catch(e) {}
+    }
+    // ③ フォールバック
+    yaExportFallback(full, fname);
+    return;
+  }
+
+  download(full, fname, 'text/html;charset=utf-8');
+  toast('📄 HTMLを書き出しました');
+}
+
+function yaExportFallback(full, fname) {
+  try {
+    const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(full);
+    const win = window.open(dataUrl, '_blank');
+    if (win) { toast('📄 新タブで開きました（共有ボタンで保存）'); return; }
+  } catch(e) {}
+  openDownloadModal(fname, full);
+}
+
+// ============================================================
+// DATA MANAGEMENT
+// ============================================================
+function renderDataTab() {
+  const now = new Date();
+  const ts = `最終同期: ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  document.getElementById('sync-sales-count').textContent    = `端末: ${D.sales.length}件`;
+  document.getElementById('sync-products-count').textContent = `端末: ${D.products.length}件`;
+  document.getElementById('sync-sales-date').textContent     = ts;
+  document.getElementById('sync-products-date').textContent  = ts;
+
+  // localStorage 状態表示
+  const lsEl = document.getElementById('ls-status');
+  if (lsEl) {
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      lsEl.textContent = saved
+        ? '✅ このブラウザにデータが保存されています（Safariを閉じても残ります）'
+        : '⚠️ まだ保存されていません（データを追加すると自動保存されます）';
+    } catch(e) {
+      lsEl.textContent = '⚠️ このブラウザはローカル保存に対応していません';
+    }
+  }
+
+  const st = monthStats('all');
+  document.getElementById('data-stats').innerHTML = `
+    <div class="data-row"><span style="color:#8e8e93">総売上件数</span><span style="font-weight:700">${D.sales.length}件</span></div>
+    <div class="data-row"><span style="color:#8e8e93">商品マスタ件数</span><span style="font-weight:700">${D.products.length}件</span></div>
+    <div class="data-row"><span style="color:#8e8e93">累計売上</span><span style="font-weight:700">${yen(st.sales)}</span></div>
+    <div class="data-row"><span style="color:#8e8e93">累計純利益</span><span style="font-weight:700;color:#34c759">${yen(st.profit)}</span></div>
+    <div class="data-row"><span style="color:#8e8e93">平均利益率</span><span style="font-weight:700">${st.margin.toFixed(1)}%</span></div>
+  `;
+}
+
+function exportAllData() {
+  const content = JSON.stringify(D, null, 2);
+  const fname   = `sellerbook_${today()}.json`;
+  if (isIOS()) {
+    if (canShareFiles()) {
+      const file = new File([content], fname, {type:'application/json'});
+      navigator.share({files:[file], title:'SellerBook データ'})
+        .catch(err=>{ if(err.name!=='AbortError') download(content,fname,'application/json;charset=utf-8'); });
+      return;
+    }
+    if (navigator.share) {
+      try {
+        navigator.share({title:'SellerBook データ', text:content})
+          .catch(()=>download(content,fname,'application/json;charset=utf-8'));
+        return;
+      } catch(e) {}
+    }
+    download(content, fname, 'application/json;charset=utf-8');
+    return;
+  }
+  download(content, fname, 'application/json;charset=utf-8');
+  toast('💾 JSONをエクスポートしました');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const imp = JSON.parse(ev.target.result);
+      if(imp.products && imp.sales) {
+        if(confirm(`インポートしますか？\n商品: ${imp.products.length}件\n売上: ${imp.sales.length}件\n\n現在のデータは上書きされます。`)) {
+          D = imp;
+          saveData();
+          renderDataTab();
+          toast('📥 インポートしました');
+        }
+      } else {
+        alert('有効なSellerBook Proデータではありません');
+      }
+    } catch { alert('JSONファイルの解析に失敗しました'); }
+  };
+  r.readAsText(file);
+  e.target.value = '';
+}
+
+function exportCSV(type) {
+  let header, rows, fname;
+  if(type==='sales') {
+    header = ['ID','商品名','販売価格','仕入れ額','送料','梱包費','手数料','純利益','利益率','取引日','プラットフォーム'];
+    rows   = D.sales.map(s => [
+      s.id, s.name, s.price, s.purchase, s.shipping, s.pack, s.fee, s.profit,
+      (s.price>0?(s.profit/s.price*100).toFixed(1)+'%':'0.0%'), s.date, s.platform||'ヤフオク'
+    ]);
+    fname  = `sales_${today()}.csv`;
+  } else {
+    header = ['ID','商品名','カテゴリ','サイズ','ブランド','仕入れ価格','出品価格','在庫数','状態','登録日','メモ'];
+    rows   = D.products.map(p => [
+      p.id, p.name, p.category, p.size, p.brand, p.purchase, p.listPrice, p.stock, p.status, p.date, p.notes
+    ]);
+    fname  = `products_${today()}.csv`;
+  }
+  const bom = '﻿';
+  const csv = bom + [header, ...rows]
+    .map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','))
+    .join('\r\n');
+  if (isIOS() && canShareFiles()) {
+    const file = new File([csv], fname, {type:'text/csv'});
+    navigator.share({files:[file], title:fname})
+      .catch(err=>{ if(err.name!=='AbortError') download(csv,fname,'text/csv;charset=utf-8'); });
+    return;
+  }
+  download(csv, fname, 'text/csv;charset=utf-8');
+  toast('📊 CSVを書き出しました');
+}
+
+// ============================================================
+// LOCAL STORAGE PERSISTENCE
+// ============================================================
+const LS_KEY = 'sellerbook_v1';
+
+function saveData() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(D));
+  } catch(e) {
+    // QuickLook など localStorage が使えない環境では無視
+  }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.products) && Array.isArray(parsed.sales)) {
+      D = parsed;
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function clearData() {
+  if (!confirm('全データを削除してサンプルデータに戻しますか？\nこの操作は取り消せません。')) return;
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  location.reload();
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function isIOS() {
+  try {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  } catch(e) { return false; }
+}
+
+function canShareFiles() {
+  try {
+    if (!navigator.share || !navigator.canShare) return false;
+    const f = new File(['test'], 'test.txt', {type:'text/plain'});
+    return navigator.canShare({files:[f]});
+  } catch(e) { return false; }
+}
+
+function download(content, filename, mime) {
+  // iOS/iPadOS Safari does not support blob: URL download via <a download>
+  // → fall back to copy-modal so user can paste & save manually
+  if (isIOS()) {
+    const textContent = (content instanceof Uint8Array || content instanceof ArrayBuffer)
+      ? '(バイナリファイルはコピーできません)'
+      : content;
+    openDownloadModal(filename, textContent);
+    return;
+  }
+
+  // Desktop / Android Chrome: standard blob download
+  try {
+    const blob = new Blob([content], {type: mime});
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), {href:url, download:filename});
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch(e) {
+    // 最終フォールバック: コピーモーダル
+    const textContent = (typeof content === 'string') ? content : '(書き出し失敗)';
+    openDownloadModal(filename, textContent);
+  }
+}
+
+function openDownloadModal(filename, content) {
+  document.getElementById('modal-dl-title').textContent = filename;
+  document.getElementById('modal-dl-desc').textContent =
+    'Safari では直接ダウンロードできないため、下のテキストを全コピーして保存してください。';
+  document.getElementById('modal-dl-content').value = content;
+  document.getElementById('modal-download').classList.add('active');
+}
+
+function closeDownloadModal() {
+  document.getElementById('modal-download').classList.remove('active');
+}
+
+function copyDownloadContent() {
+  const ta = document.getElementById('modal-dl-content');
+  ta.select();
+  // Modern clipboard API (requires HTTPS / user gesture)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value)
+      .then(() => toast('📋 コピーしました'))
+      .catch(() => {
+        document.execCommand('copy');
+        toast('📋 コピーしました');
+      });
+  } else {
+    document.execCommand('copy');
+    toast('📋 コピーしました');
+  }
+}
+
+// ============================================================
+// SVG LINE CHART (CDN不要・完全オフライン対応)
+// ============================================================
+function drawSvgChart(containerId, labels, datasets) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const W = Math.max(wrap.clientWidth || 320, 200);
+  const H = 220;
+  const P = {t:12, r:12, b:36, l:48};
+  const pw = W - P.l - P.r;
+  const ph = H - P.t - P.b;
+
+  const allVals = datasets.flatMap(d => d.data).filter(v => isFinite(v));
+  if (!allVals.length || !labels.length) {
+    wrap.innerHTML = '<div style="height:220px;display:flex;align-items:center;justify-content:center;color:#8e8e93;font-size:13px">データなし</div>';
+    return;
+  }
+
+  const rawMax = Math.max(...allVals);
+  const rawMin = Math.min(0, ...allVals);
+  const range  = rawMax - rawMin || 1;
+  const niceMax = Math.ceil(rawMax / (range/4)) * (range/4) || 1000;
+  const niceMin = rawMin < 0 ? Math.floor(rawMin / (range/4)) * (range/4) : 0;
+  const niceRange = niceMax - niceMin || 1;
+
+  const xOf = i => P.l + (labels.length > 1 ? pw * i / (labels.length - 1) : pw / 2);
+  const yOf = v => P.t + ph - ph * (v - niceMin) / niceRange;
+
+  // Grid + Y labels
+  let grid = '', yLabs = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = niceMin + niceRange * i / 4;
+    const y = yOf(v).toFixed(1);
+    const yt = v >= 10000 ? (v/10000).toFixed(0)+'万' : v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0);
+    grid  += `<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="#f0f0f5" stroke-width="1"/>`;
+    yLabs += `<text x="${P.l-5}" y="${+y+3}" text-anchor="end" font-size="9" fill="#aeaeb2">${yt}</text>`;
+  }
+
+  // X labels (間引き)
+  let xLabs = '';
+  const step = labels.length > 8 ? Math.ceil(labels.length / 6) : 1;
+  labels.forEach((l, i) => {
+    if (i % step === 0 || i === labels.length - 1) {
+      const lbl = l.replace(/^\d{4}-/, '').replace('-', '/');
+      xLabs += `<text x="${xOf(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9" fill="#aeaeb2">${lbl}</text>`;
+    }
+  });
+
+  // Lines + dots
+  let paths = '';
+  datasets.forEach(ds => {
+    const pts = ds.data.map((v, i) => `${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+    // エリア
+    const first = `${xOf(0).toFixed(1)},${yOf(niceMin < 0 ? 0 : niceMin).toFixed(1)}`;
+    const last  = `${xOf(labels.length-1).toFixed(1)},${yOf(niceMin < 0 ? 0 : niceMin).toFixed(1)}`;
+    const areaPts = first + ' ' + pts + ' ' + last;
+    const col = ds.color;
+    const rgb = col === '#4285f4' ? '66,133,244' : col === '#e84040' ? '232,64,64' : '52,199,89';
+    paths += `<polygon points="${areaPts}" fill="rgba(${rgb},0.07)" stroke="none"/>`;
+    paths += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    ds.data.forEach((v, i) => {
+      paths += `<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="3.5" fill="${col}" stroke="white" stroke-width="1.5"/>`;
+    });
+  });
+
+  wrap.innerHTML = `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;display:block">${grid}${yLabs}${paths}${xLabs}</svg>`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function safeRun(name, fn) {
+  try { fn(); }
+  catch(e) {
+    var b = document.getElementById('err-banner');
+    if(b){ b.style.display='block'; b.textContent = '⚠️ ' + name + ' エラー: ' + e.message; }
+  }
+}
+
+// ============================================================
+// PWA: Service Worker 登録 + アイコン設定
+// ============================================================
+(function(){
+  // アイコンをCanvasで生成してapple-touch-iconに設定
+  try {
+    var canvas = document.createElement('canvas');
+    canvas.width = 180; canvas.height = 180;
+    var ctx = canvas.getContext('2d');
+    // 背景（赤）
+    ctx.fillStyle = '#e84040';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 180, 180, 28);
+    ctx.fill();
+    // 白い内側
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.roundRect(12, 12, 156, 156, 20);
+    ctx.fill();
+    // 赤いバナー
+    ctx.fillStyle = '#e84040';
+    ctx.beginPath();
+    ctx.roundRect(18, 18, 144, 85, 14);
+    ctx.fill();
+    // SB テキスト
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 58px -apple-system,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SB', 90, 60);
+    // Pro テキスト
+    ctx.fillStyle = '#e84040';
+    ctx.font = 'bold 20px -apple-system,sans-serif';
+    ctx.fillText('SellerBook Pro', 90, 130);
+    var icon = document.getElementById('pwa-icon');
+    if(icon) icon.href = canvas.toDataURL('image/png');
+  } catch(e){}
+
+  // Service Worker 登録
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js')
+      .catch(function(){});  // 登録失敗は無視
+  }
+})();
+
+window.addEventListener('load', function() {
+  // まずlocalStorageからデータを復元
+  safeRun('loadData', loadData);
+
+  safeRun('月選択', function() {
+    var months = allMonths();
+    if(months.length) selMonth = months[0];
+  });
+
+  safeRun('日付セット', function() {
+    var t = today();
+    var md = document.getElementById('m-date');
+    var pd = document.getElementById('p-date');
+    if(md) md.value = t;
+    if(pd) pd.value = t;
+  });
+
+  safeRun('renderAnalytics', renderAnalytics);
+  safeRun('fillYaProductSelect', fillYaProductSelect);
+  safeRun('renderDataTab', renderDataTab);
+});
+</script>
+</body>
+</html>
